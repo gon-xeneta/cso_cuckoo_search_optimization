@@ -12,8 +12,9 @@ beta = 1.5
 n = 1
 pa = 0.25
 
+# CUCKOO SEARCH PARAMS
 POPULATION_SIZE = 100
-MAX_GENERATION = 1_000
+MAX_GENERATION = 3_000
 
 Client = namedtuple("Client", ["x", "y"])
 Facility = namedtuple("Facility", ["x", "y"])
@@ -49,7 +50,7 @@ def assert_are_coordinates(client_or_facility: list):
 
 def distance_of_coordinates(coord_1: tuple, coord_2: tuple) -> float:
     assert_are_coordinates([coord_1, coord_2])
-    return ((coord_1.x - coord_2.x) ** 2 + (coord_1.y - coord_2.y) ** 2) ** 0.5
+    return (((coord_1.x - coord_2.x) ** 2) + ((coord_1.y - coord_2.y) ** 2)) ** 0.5
 
 
 def _verify_solution(mapping: dict):
@@ -147,60 +148,53 @@ def _generate_levy_flight_solution(global_best: list) -> float:
     return normalized_solution
 
 
-def run():
-    # Generate random solution
-    random_solutions = [_generate_random_solution() for _ in range(POPULATION_SIZE)]
-
-    iter = 0
+def _sort_solution_desc(solution: list) -> dict:
+    assert isinstance(solution, list)
 
     # FIND GLOBAL BEST FROM RANDOM SOLUTIONS
     # A fraction (pa) of worse nests are discovered with a probability pa
     solutions_with_fitness = []
-    for s in random_solutions:
+    for s in solution:
         solutions_with_fitness.append(
             {
                 "solution": s,
                 "fitness": fitness(mapping=s),
             }
         )
-    global_best_solution = sorted(solutions_with_fitness, key=lambda x: x["fitness"])[0]
+    return sorted(solutions_with_fitness, key=lambda x: x["fitness"])
+
+
+def run():
+    """Run Cuckoo Search Algorithm via Levy Flight"""
+    # Generate random solution
+    random_solutions = [_generate_random_solution() for _ in range(POPULATION_SIZE)]
+
+    iter = 0
+
+    # FIND GLOBAL BEST FROM RANDOM SOLUTIONS
+    global_best_solution = _sort_solution_desc(random_solutions)[0]
 
     while iter < MAX_GENERATION:  # OR STOP CRITERIA
         # generate random facility (our cuckoo) via levy flight
         levy_flight_solution = _generate_levy_flight_solution(
             global_best=global_best_solution["solution"]
         )
-        fitness_fi = fitness(
-            mapping=levy_flight_solution
-        )  # TODO Levy flight generated solution
+        fitness_of_levy_flight_solution = fitness(mapping=levy_flight_solution)
 
         # Choose a nest among the population randomly
         solution = choice(random_solutions)
         fitness_fj = fitness(mapping=solution)
 
-        if fitness_fi <= fitness_fj:
+        if fitness_fj >= fitness_of_levy_flight_solution:
             # replace the nest with new solution
             random_solutions.remove(solution)
             random_solutions.append(levy_flight_solution)
 
-        # A fraction (pa) of worse nests are discovered with a probability pa
-        solutions_with_fitness = []
-        for s in random_solutions:
-            # print(s)
-            solutions_with_fitness.append(
-                {
-                    "solution": s,
-                    "fitness": fitness(mapping=s),
-                }
-            )
-
         # ABANDON pa% of the worst solutions and generate new random ones
         SOLUTIONS_TO_BE_DROPPED = int(pa * POPULATION_SIZE)
-        remaining = sorted(solutions_with_fitness, key=lambda x: x["fitness"])[
-            :SOLUTIONS_TO_BE_DROPPED
-        ]
-        random_solutions = [s["solution"] for s in remaining]
+        remaining = _sort_solution_desc(random_solutions)[:SOLUTIONS_TO_BE_DROPPED]
 
+        # Regenerate dropped solutions
         while len(remaining) < POPULATION_SIZE:
             current_solution = _generate_random_solution()
             remaining.append(
@@ -211,10 +205,9 @@ def run():
             )
 
         current_best = sorted(remaining, key=lambda x: x["fitness"])[0]
-        if global_best_solution["fitness"] > current_best["fitness"]:
+        if global_best_solution["fitness"] >= current_best["fitness"]:
             global_best_solution = remaining[0]
 
-        print(global_best_solution["fitness"])
         random_solutions = [s["solution"] for s in remaining]
 
         iter += 1
