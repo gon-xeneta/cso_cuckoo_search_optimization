@@ -102,7 +102,11 @@ def _generate_random_solution() -> dict:
 
 
 
-def _generate_levy_flight_walk(global_best: list) -> float:
+def _generate_levy_flight_solution(global_best: list) -> float:
+    """ Generate random solution from the current global best via levy flight
+    """
+    _verify_solution(mapping=global_best)
+
     num = gamma(1+beta)*np.sin(np.pi*beta/2)
     den = gamma((1+beta)/2)*beta*(2**((beta-1)/2))
     σu = (num/den)**(1/beta)
@@ -169,7 +173,7 @@ def run():
 
     while (iter < MAX_GENERATION): # OR STOP CRITERIA
         # generate random facility (our cuckoo) via levy flight
-        levy_flight_solution = _generate_levy_flight_walk(global_best=global_best_solution["solution"])
+        levy_flight_solution = _generate_levy_flight_solution(global_best=global_best_solution["solution"])
         fitness_fi = fitness(mapping=levy_flight_solution) # TODO Levy flight generated solution
 
         # Choose a nest among the population randomly
