@@ -1,6 +1,6 @@
 from cso import CSO
 from cso.fitness import fitness_4
-from random import randint, choice
+from random import randint, choice, uniform
 
 from collections import namedtuple, defaultdict
 
@@ -92,42 +92,95 @@ def _generate_random_solution() -> dict:
     return solution
 
 
-# def run():
-#     CSO(fitness=fitness, )
+import numpy as np
+from math import gamma
 
-# sample_mapping = {
-#     FACILITIES[0]: [CLIENTS[0], CLIENTS[1]],
-#     FACILITIES[1]: [CLIENTS[2], CLIENTS[3]],
-#     FACILITIES[2]: CLIENTS[4:],
-# }
-# print(fitness(mapping=_generate_random_solution()))
+beta = 1.5
+n = 1
 
-# CSO(fitness=fitness, bound=[(-4,4),(-4,4)], min=True).execute()
+def _generate_levy_flight_walk(global_best: list) -> float:
+    num = gamma(1+beta)*np.sin(np.pi*beta/2)
+    den = gamma((1+beta)/2)*beta*(2**((beta-1)/2))
+    σu = (num/den)**(1/beta)
+    σv = 1
+    u = np.random.normal(0, σu, n)
+    v = np.random.normal(0, σv, n)
+    S = u/(np.abs(v)**(1/beta))
+    S = S[0]
+
+    # dictify client positions based on facility
+    # {
+    #   Client(2,1): 2,
+    #   Client(2,1): 0,
+    #   ..
+    # }
+    random_solution = _generate_random_solution()
+    clients = {}
+    for index, (_, facility) in enumerate(random_solution.items()):
+        for client in facility:
+            clients[client] = index
+
+    # print(clients)
+    client_from_best = {}
+    for index, (_, facility) in enumerate(global_best.items()):
+        for client in facility:
+            client_from_best[client] = index
+
+    # print(f"# OF CLIENTS: {len(client_from_best.keys())}")
+
+    # Generate new solution from global best on random walk
+    solution = {}
+    for index, f in enumerate(FACILITIES):
+        solution[index] = {
+            "facility": f,
+            "clients": []
+        }
+
+    # normalize solution    
+    new_index = None
+    for key, index in clients.items():
+        while(new_index is None or (new_index < 0 or new_index >= len(FACILITIES))):
+            new_index = round(index + (uniform(0, 1) * (0.1 * S * client_from_best[key])))
+        solution[new_index]["clients"].append(key)
+
+    normalized_solution = {}
+    for index, soln in solution.items():
+        normalized_solution[soln["facility"]] = soln["clients"]
+
+    return normalized_solution
+
 
 POPULATION_SIZE = 10
-MAX_GENERATION = 100_000
+MAX_GENERATION = 10_000
 pa = 0.25
 # Generate random solution
 random_solutions = [_generate_random_solution() for _ in range(POPULATION_SIZE)]
 
 iter = 0
-global_best_solution = {
-    "solution": None,
-    "fitness": 999999,
-}
+
+# FIND GLOBAL BEST FROM RANDOM SOLUTIONS
+# A fraction (pa) of worse nests are discovered with a probability pa
+solutions_with_fitness = []
+for s in random_solutions:
+    solutions_with_fitness.append({
+        'solution': s,
+        'fitness': fitness(mapping=s),
+    })
+global_best_solution = sorted(solutions_with_fitness, key=lambda x: x['fitness'])[0]
 
 while (iter < MAX_GENERATION): # OR STOP CRITERIA
     # generate random facility (our cuckoo) via levy flight
-    fitness_fi = 999999 # TODO Levy flight generated solution
+    levy_flight_solution = _generate_levy_flight_walk(global_best=global_best_solution["solution"])
+    fitness_fi = fitness(mapping=levy_flight_solution) # TODO Levy flight generated solution
 
     # Choose a nest among the population randomly
     solution = choice(random_solutions)
     fitness_fj = fitness(mapping=solution)
 
-    # if fitness_fi <= fitness_fj:
-    #     # replace the nest with new solution
-    #     random_solutions.remove(solution)
-        # random_solutions.append(fitness_fi)
+    if fitness_fi <= fitness_fj:
+        # replace the nest with new solution
+        random_solutions.remove(solution)
+        random_solutions.append(levy_flight_solution)
 
     # A fraction (pa) of worse nests are discovered with a probability pa
     solutions_with_fitness = []
