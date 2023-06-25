@@ -7,10 +7,10 @@
 [![GitHub stars](https://img.shields.io/github/stars/ujjwalkhandelwal/cso_cuckoo_search_optimization?style=flat-square
 )](https://github.com/ujjwalkhandelwal/cso_cuckoo_search_optimization/stargazers)
 
-Implemented fully documented Cuckoo Search Optimization (CSO) algorithm via Levy flights (basic model) using Python. 
+Implemented fully documented Cuckoo Search Optimization (CSO) algorithm via Levy flights (basic model) using Python.
 
 ## Dependencies
-    
+
   - Numpy
   - matplotlib
 
@@ -23,7 +23,7 @@ Next, a fitness function (or cost function) is required. I have included **five*
 
 ### Fitness-1 (Himmelblau's Function)
 `Minimize:` **f(x) = (x<sup>2</sup> + y - 11)<sup>2</sup> + (x + y<sup>2</sup> - 7)<sup>2</sup>**
-    
+
 `Optimum solution`:  ***x = 3 ; y = 2***
 
 ### Fitness-2 (Booth's Function)
@@ -33,19 +33,19 @@ Next, a fitness function (or cost function) is required. I have included **five*
 
 ### Fitness-3 (Beale's Function)
 `Minimize:` **f(x) = (1.5 - x - xy)<sup>2</sup> + (2.25 - x + xy<sup>2</sup>)<sup>2</sup> + (2.625 - x + xy<sup>3</sup>)<sup>2</sup>**
-    
+
 `Optimum solution`:  ***x = 3 ; y = 0.5***
 
 ### Fitness-4
 `Maximize:` **f(x) = 2xy + 2x - x<sup>2</sup> - 2y<sup>2</sup>**
-    
+
 `Optimum solution`:  ***x = 2 ; y = 1***
 
 ### Fitness-5 (Bivariate Michaelwicz function)
 `Minimize:` **f(x) = -sin(x)(sin<sup>2m</sup>(x<sup>2</sup>/π)) - sin(y)(sin<sup>2m</sup>(2y<sup>2</sup>/π))**
-    
+
  When the bound is **(x,y) ∈ (0,5) x (0,5)** and **m=10** [1]
- 
+
 `Optimum solution`:  ***x = 2.20319 ; y = 1.57049***
 
 ```py
@@ -81,7 +81,7 @@ OPTIMUM FITNESS
   > 2.0
 ```
 
-Incase you want to print the fitness value for each iteration, set `verbose=True` (here `Tmax=50` is the 
+Incase you want to print the fitness value for each iteration, set `verbose=True` (here `Tmax=50` is the
 maximum iteration)
 
 ```py
@@ -147,7 +147,7 @@ OPTIMUM FITNESS
   > 0.0068151
 ```
 
-Now, incase you want to plot the fitness value for each iteration, then set `plot=True` (here `Tmax=50` is the 
+Now, incase you want to plot the fitness value for each iteration, then set `plot=True` (here `Tmax=50` is the
 maximum iteration)
 
 ```py
@@ -164,8 +164,8 @@ OPTIMUM FITNESS
 
 ![Fitness](https://github.com/ujjwalkhandelwal/cso_cuckoo_search_optimization/blob/main/fitness.png)
 
-In case you are interested in implementing **Particle Swarm Optimization** using Python, you can visit [this link!](https://github.com/ujjwalkhandelwal/pso_particle_swarm_optimization) 
+In case you are interested in implementing **Particle Swarm Optimization** using Python, you can visit [this link!](https://github.com/ujjwalkhandelwal/pso_particle_swarm_optimization)
 
-### References:    
+### References:
 
 [1] X. Yang and Suash Deb, "Cuckoo Search via Lévy flights," 2009 World Congress on Nature & Biologically Inspired Computing (NaBIC), 2009, pp. 210-214, doi: 10.1109/NABIC.2009.5393690.
