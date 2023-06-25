@@ -10,6 +10,10 @@ from math import gamma
 # LEVY FLIGHT PARAMS
 beta = 1.5
 n = 1
+pa = 0.25
+
+POPULATION_SIZE = 100
+MAX_GENERATION = 1_000
 
 Client = namedtuple('Client', ['x', 'y'])
 Facility = namedtuple('Facility', ['x', 'y'])
@@ -120,13 +124,10 @@ def _generate_levy_flight_walk(global_best: list) -> float:
         for client in facility:
             clients[client] = index
 
-    # print(clients)
     client_from_best = {}
     for index, (_, facility) in enumerate(global_best.items()):
         for client in facility:
             client_from_best[client] = index
-
-    # print(f"# OF CLIENTS: {len(client_from_best.keys())}")
 
     # Generate new solution from global best on random walk
     solution = {}
@@ -150,72 +151,70 @@ def _generate_levy_flight_walk(global_best: list) -> float:
     return normalized_solution
 
 
-POPULATION_SIZE = 10
-MAX_GENERATION = 10_000
-pa = 0.25
-# Generate random solution
-random_solutions = [_generate_random_solution() for _ in range(POPULATION_SIZE)]
+def run():
+    # Generate random solution
+    random_solutions = [_generate_random_solution() for _ in range(POPULATION_SIZE)]
 
-iter = 0
+    iter = 0
 
-# FIND GLOBAL BEST FROM RANDOM SOLUTIONS
-# A fraction (pa) of worse nests are discovered with a probability pa
-solutions_with_fitness = []
-for s in random_solutions:
-    solutions_with_fitness.append({
-        'solution': s,
-        'fitness': fitness(mapping=s),
-    })
-global_best_solution = sorted(solutions_with_fitness, key=lambda x: x['fitness'])[0]
-
-while (iter < MAX_GENERATION): # OR STOP CRITERIA
-    # generate random facility (our cuckoo) via levy flight
-    levy_flight_solution = _generate_levy_flight_walk(global_best=global_best_solution["solution"])
-    fitness_fi = fitness(mapping=levy_flight_solution) # TODO Levy flight generated solution
-
-    # Choose a nest among the population randomly
-    solution = choice(random_solutions)
-    fitness_fj = fitness(mapping=solution)
-
-    if fitness_fi <= fitness_fj:
-        # replace the nest with new solution
-        random_solutions.remove(solution)
-        random_solutions.append(levy_flight_solution)
-
+    # FIND GLOBAL BEST FROM RANDOM SOLUTIONS
     # A fraction (pa) of worse nests are discovered with a probability pa
     solutions_with_fitness = []
     for s in random_solutions:
-        # print(s)
         solutions_with_fitness.append({
             'solution': s,
             'fitness': fitness(mapping=s),
         })
+    global_best_solution = sorted(solutions_with_fitness, key=lambda x: x['fitness'])[0]
 
-    # ABANDON pa% of the worst solutions and generate new random ones    
-    SOLUTIONS_TO_BE_DROPPED = int(pa*POPULATION_SIZE)
-    remaining = sorted(solutions_with_fitness, key=lambda x: x['fitness'])[:SOLUTIONS_TO_BE_DROPPED]
-    random_solutions = [s['solution'] for s in remaining]
-    
-    if global_best_solution['fitness'] > remaining[0]['fitness']:
-        global_best_solution = remaining[0]
+    while (iter < MAX_GENERATION): # OR STOP CRITERIA
+        # generate random facility (our cuckoo) via levy flight
+        levy_flight_solution = _generate_levy_flight_walk(global_best=global_best_solution["solution"])
+        fitness_fi = fitness(mapping=levy_flight_solution) # TODO Levy flight generated solution
 
-    while len(random_solutions) < (POPULATION_SIZE):
-        random_solutions.append(_generate_random_solution())
-    iter += 1
+        # Choose a nest among the population randomly
+        solution = choice(random_solutions)
+        fitness_fj = fitness(mapping=solution)
 
+        if fitness_fi <= fitness_fj:
+            # replace the nest with new solution
+            random_solutions.remove(solution)
+            random_solutions.append(levy_flight_solution)
 
-# Find the best solution
-for s in random_solutions:
-    solutions_with_fitness.append({
-        'solution': s,
-        'fitness': fitness(mapping=s),
-    })
+        # A fraction (pa) of worse nests are discovered with a probability pa
+        solutions_with_fitness = []
+        for s in random_solutions:
+            # print(s)
+            solutions_with_fitness.append({
+                'solution': s,
+                'fitness': fitness(mapping=s),
+            })
 
-best_solution = sorted(solutions_with_fitness, key=lambda x: x['fitness'])[-1]
-# BEST SOLUTION
-print(best_solution['solution'])
-print(best_solution['fitness'])
+        # ABANDON pa% of the worst solutions and generate new random ones    
+        SOLUTIONS_TO_BE_DROPPED = int(pa*POPULATION_SIZE)
+        remaining = sorted(solutions_with_fitness, key=lambda x: x['fitness'])[:SOLUTIONS_TO_BE_DROPPED]
+        random_solutions = [s['solution'] for s in remaining]
 
-# GLOBAL BEST SOLUTION
-print(global_best_solution['solution'])
-print(global_best_solution['fitness'])
+        while len(remaining) < POPULATION_SIZE:
+            current_solution = _generate_random_solution()
+            remaining.append({
+                "solution": current_solution,
+                "fitness": fitness(mapping=current_solution)
+            })
+        
+        current_best = sorted(remaining, key=lambda x: x['fitness'])[0]
+        if global_best_solution['fitness'] > current_best['fitness']:
+            global_best_solution = remaining[0]
+
+        print(global_best_solution['fitness'])
+        random_solutions = [s['solution'] for s in remaining]
+
+        iter += 1
+
+    return global_best_solution
+
+solution = run()
+print()
+print("********* OUTPUT ***********")
+print(solution['solution'])
+print(solution['fitness'])
