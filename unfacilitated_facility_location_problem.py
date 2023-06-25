@@ -4,6 +4,13 @@ from random import randint, choice, uniform
 
 from collections import namedtuple, defaultdict
 
+import numpy as np
+from math import gamma
+
+# LEVY FLIGHT PARAMS
+beta = 1.5
+n = 1
+
 Client = namedtuple('Client', ['x', 'y'])
 Facility = namedtuple('Facility', ['x', 'y'])
 
@@ -65,8 +72,6 @@ def _verify_solution(mapping: dict):
 
 def fitness(mapping: dict):
     _verify_solution(mapping=mapping)
-    # TODO make sure that client is not assigned to more than one facility
-
     _fitness = 0
 
     for facility, clients in mapping.items():
@@ -92,11 +97,6 @@ def _generate_random_solution() -> dict:
     return solution
 
 
-import numpy as np
-from math import gamma
-
-beta = 1.5
-n = 1
 
 def _generate_levy_flight_walk(global_best: list) -> float:
     num = gamma(1+beta)*np.sin(np.pi*beta/2)
