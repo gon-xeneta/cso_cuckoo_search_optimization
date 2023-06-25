@@ -37,21 +37,34 @@ def distance_of_coordinates(coord_1: tuple, coord_2: tuple) -> float:
     assert_are_coordinates([coord_1, coord_2])
     return ((coord_1.x - coord_2.x)**2 + (coord_1.y - coord_2.y)**2)**0.5
 
-def fitness(mapping: dict):
+
+def _verify_solution(mapping: dict):
     assert isinstance(mapping, dict)
     assert len(mapping) == len(FACILITIES)
     assert all([
         isinstance(facility, Facility) for facility in mapping.keys()
     ])
+    assert all([
+        facility in mapping.keys() for facility in FACILITIES
+    ])
 
     assert all([
         isinstance(clients_list, list) for clients_list in mapping.values()
     ])
+    all_clients = []
     for client_list in mapping.values():
         assert all([
             isinstance(client, Client) for client in client_list
         ])
-    
+        all_clients.extend(client_list)
+    assert len(all_clients) == len(CLIENTS)
+    assert([
+        client in client_list for client in CLIENTS
+    ])
+
+
+def fitness(mapping: dict):
+    _verify_solution(mapping=mapping)
     # TODO make sure that client is not assigned to more than one facility
 
     _fitness = 0
@@ -78,6 +91,7 @@ def _generate_random_solution() -> dict:
             solution[assign_to_facility] = [client]
     return solution
 
+
 # def run():
 #     CSO(fitness=fitness, )
 
@@ -91,12 +105,16 @@ def _generate_random_solution() -> dict:
 # CSO(fitness=fitness, bound=[(-4,4),(-4,4)], min=True).execute()
 
 POPULATION_SIZE = 10
-MAX_GENERATION = 5
+MAX_GENERATION = 100_000
 pa = 0.25
 # Generate random solution
 random_solutions = [_generate_random_solution() for _ in range(POPULATION_SIZE)]
 
 iter = 0
+global_best_solution = {
+    "solution": None,
+    "fitness": 999999,
+}
 
 while (iter < MAX_GENERATION): # OR STOP CRITERIA
     # generate random facility (our cuckoo) via levy flight
@@ -120,14 +138,16 @@ while (iter < MAX_GENERATION): # OR STOP CRITERIA
             'fitness': fitness(mapping=s),
         })
 
-    # DROP pa% of the worst solutions and generate new random ones    
+    # ABANDON pa% of the worst solutions and generate new random ones    
     SOLUTIONS_TO_BE_DROPPED = int(pa*POPULATION_SIZE)
-    remaining = sorted(solutions_with_fitness, key=lambda x: x['fitness'])[SOLUTIONS_TO_BE_DROPPED:]
+    remaining = sorted(solutions_with_fitness, key=lambda x: x['fitness'])[:SOLUTIONS_TO_BE_DROPPED]
     random_solutions = [s['solution'] for s in remaining]
-
-    while len(random_solutions) < POPULATION_SIZE:
-        random_solutions.append(_generate_random_solution())
     
+    if global_best_solution['fitness'] > remaining[0]['fitness']:
+        global_best_solution = remaining[0]
+
+    while len(random_solutions) < (POPULATION_SIZE):
+        random_solutions.append(_generate_random_solution())
     iter += 1
 
 
@@ -142,3 +162,7 @@ best_solution = sorted(solutions_with_fitness, key=lambda x: x['fitness'])[-1]
 # BEST SOLUTION
 print(best_solution['solution'])
 print(best_solution['fitness'])
+
+# GLOBAL BEST SOLUTION
+print(global_best_solution['solution'])
+print(global_best_solution['fitness'])
